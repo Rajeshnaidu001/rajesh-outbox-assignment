@@ -1,0 +1,45 @@
+import { Router } from "express";
+import { EmailStatus, type Prisma } from "@prisma/client";
+import { requireAuth } from "../middleware/requireAuth";
+import { prisma } from "../lib/prisma";
+
+export const emailsRouter = Router();
+emailsRouter.use(requireAuth);
+
+emailsRouter.get("/", async (req, res) => {
+  const status = req.query.status as string | undefined;
+  const statusFilter: EmailStatus[] | undefined =
+    status === "scheduled"
+      ? [EmailStatus.scheduled, EmailStatus.sending]
+      : status === "sent"
+        ? [EmailStatus.sent, EmailStatus.failed]
+        : undefined;
+
+  const campaignId = req.query.campaignId as string | undefined;
+
+  const where: Prisma.EmailJobWhereInput = {
+    userId: req.authUserId!,
+    ...(statusFilter ? { status: { in: statusFilter } } : {}),
+    ...(campaignId ? { campaignId } : {}),
+  };
+
+  const emails = await prisma.emailJob.findMany({
+    where,
+    orderBy: status === "sent" ? { sentAt: "desc" } : { scheduledAt: "asc" },
+    take: 200,
+    include: { senderConfig: { select: { name: true, fromAddress: true } } },
+  });
+
+  res.json(
+    emails.map((e) => ({
+      id: e.id,
+      recipient: e.recipient,
+      subject: e.subject,
+      status: e.status,
+      scheduledAt: e.scheduledAt,
+      sentAt: e.sentAt,
+      error: e.error,
+      sender: e.senderConfig.name,
+    }))
+  );
+});

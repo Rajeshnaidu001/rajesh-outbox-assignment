@@ -1,0 +1,23 @@
+{
+  "name": "outbox-assign",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev:server --workspace backend",
+    "dev:worker": "npm run dev:worker --workspace backend",
+    "dev:frontend": "npm run dev --workspace frontend",
+    "loadtest": "npm run loadtest --workspace backend"
+  },
+  "allowScripts": {
+    "@prisma/client@5.22.0": true,
+    "@prisma/engines@5.22.0": true,
+    "esbuild@0.28.2": true,
+    "msgpackr-extract@3.0.4": true,
+    "prisma@5.22.0": true,
+    "fsevents@2.3.3": true
+  }
+}
