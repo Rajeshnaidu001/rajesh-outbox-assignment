@@ -9,7 +9,7 @@ export async function indexEmailJob(job: EmailJobWithSender): Promise<void> {
     await esClient.index({
       index: EMAILS_INDEX,
       id: job.id,
-      document: {
+      body: {
         userId: job.userId,
         senderConfigId: job.senderConfigId,
         campaignId: job.campaignId,

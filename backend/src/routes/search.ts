@@ -19,19 +19,21 @@ searchRouter.get("/search", async (req, res) => {
   try {
     const result = await esClient.search({
       index: EMAILS_INDEX,
-      size: 100,
-      sort: [{ scheduledAt: "desc" }],
-      query: { bool: { must, filter } },
+      body: {
+        size: 100,
+        sort: [{ scheduledAt: "desc" }],
+        query: { bool: { must, filter } },
+      },
     });
 
     res.json(
-      result.hits.hits.map((hit) => {
-        const source = hit._source as Record<string, unknown>;
-        return { id: hit._id, ...source };
-      })
+      result.body.hits.hits.map((hit: { _id: string; _source: Record<string, unknown> }) => ({
+        id: hit._id,
+        ...hit._source,
+      }))
     );
   } catch (err) {
-    logger.error({ err }, "Elasticsearch search failed");
+    logger.error({ err }, "Search query failed");
     res.status(503).json({ error: "Search is temporarily unavailable" });
   }
 });
