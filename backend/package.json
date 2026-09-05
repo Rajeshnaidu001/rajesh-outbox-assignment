@@ -9,9 +9,10 @@
   "scripts": {
     "dev:server": "tsx watch src/server.ts",
     "dev:worker": "tsx watch src/worker.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "prisma generate && tsc -p tsconfig.json",
     "start:server": "node dist/server.js",
     "start:worker": "node dist/worker.js",
+    "start:combined": "prisma migrate deploy && node dist/combined.js",
     "loadtest": "tsx scripts/loadtest.ts",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",

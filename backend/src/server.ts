@@ -20,7 +20,7 @@ import { campaignsRouter } from "./routes/campaigns";
 import { emailsRouter } from "./routes/emails";
 import { searchRouter } from "./routes/search";
 
-async function main() {
+export async function startServer(): Promise<void> {
   await ensureEmailsIndex();
   configurePassport();
 
@@ -55,7 +55,9 @@ async function main() {
   });
 }
 
-main().catch((err) => {
-  logger.error({ err }, "Server failed to start");
-  process.exit(1);
-});
+if (require.main === module) {
+  startServer().catch((err) => {
+    logger.error({ err }, "Server failed to start");
+    process.exit(1);
+  });
+}

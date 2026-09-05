@@ -1,0 +1,47 @@
+services:
+  - type: web
+    name: outbox-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install --workspace=backend --include-workspace-root && npm run build --workspace=backend
+    startCommand: npm run start:combined --workspace=backend
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "4000"
+      # Runs the API server + BullMQ worker in one process — see backend/src/combined.ts
+      # for why (Render's free plan has no free Background Worker instance type).
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: ELASTICSEARCH_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: ENABLE_DEV_LOGIN
+        value: "true"
+      - key: FRONTEND_URL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        sync: false
+      - key: SLACK_CLIENT_ID
+        sync: false
+      - key: SLACK_CLIENT_SECRET
+        sync: false
+      - key: SLACK_REDIRECT_URI
+        sync: false
+      - key: ADMIN_QUEUES_USER
+        value: admin
+      - key: ADMIN_QUEUES_PASS
+        generateValue: true
+      - key: WORKER_CONCURRENCY
+        value: "5"

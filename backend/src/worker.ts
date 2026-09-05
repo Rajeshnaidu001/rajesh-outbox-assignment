@@ -7,7 +7,7 @@ import { EMAIL_QUEUE_NAME, type EmailJobData } from "./queues/emailQueue";
 import { makeProcessor } from "./queues/processor";
 import { DelayedError } from "bullmq";
 
-async function main() {
+export async function startWorker(): Promise<void> {
   await ensureEmailsIndex();
 
   const worker = new Worker<EmailJobData>(EMAIL_QUEUE_NAME, makeProcessor(redis), {
@@ -39,7 +39,9 @@ async function main() {
   process.on("SIGTERM", shutdown);
 }
 
-main().catch((err) => {
-  logger.error({ err }, "Worker failed to start");
-  process.exit(1);
-});
+if (require.main === module) {
+  startWorker().catch((err) => {
+    logger.error({ err }, "Worker failed to start");
+    process.exit(1);
+  });
+}
