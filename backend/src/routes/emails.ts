@@ -35,6 +35,7 @@ emailsRouter.get("/", async (req, res) => {
       id: e.id,
       recipient: e.recipient,
       subject: e.subject,
+      body: e.body,
       status: e.status,
       scheduledAt: e.scheduledAt,
       sentAt: e.sentAt,
@@ -42,4 +43,15 @@ emailsRouter.get("/", async (req, res) => {
       sender: e.senderConfig.name,
     }))
   );
+});
+
+// Powers the sidebar nav badges — a cheap count query rather than reusing the
+// (capped at 200) list endpoint, so the numbers stay accurate at any volume.
+emailsRouter.get("/counts", async (req, res) => {
+  const userId = req.authUserId!;
+  const [scheduled, sent] = await Promise.all([
+    prisma.emailJob.count({ where: { userId, status: { in: [EmailStatus.scheduled, EmailStatus.sending] } } }),
+    prisma.emailJob.count({ where: { userId, status: { in: [EmailStatus.sent, EmailStatus.failed] } } }),
+  ]);
+  res.json({ scheduled, sent });
 });

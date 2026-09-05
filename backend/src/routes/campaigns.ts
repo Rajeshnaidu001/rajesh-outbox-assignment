@@ -11,6 +11,8 @@ campaignsRouter.use(requireAuth);
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const createCampaignSchema = z.object({
   subject: z.string().min(1),
   body: z.string().min(1),
@@ -18,16 +20,28 @@ const createCampaignSchema = z.object({
   startTime: z.coerce.date(),
   minDelaySeconds: z.coerce.number().int().min(0).optional(),
   hourlyLimit: z.coerce.number().int().min(1).optional(),
+  // Recipients typed/pasted directly as chips in the compose UI, sent as a JSON array
+  // string — merged with any uploaded CSV rather than requiring one or the other.
+  manualRecipients: z
+    .string()
+    .optional()
+    .transform((raw, ctx) => {
+      if (!raw) return [] as string[];
+      try {
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) throw new Error("not an array");
+        return parsed.filter((v): v is string => typeof v === "string" && EMAIL_RE.test(v));
+      } catch {
+        ctx.addIssue({ code: "custom", message: "manualRecipients must be a JSON array of email strings" });
+        return z.NEVER;
+      }
+    }),
 });
 
 campaignsRouter.post("/", upload.single("recipients"), async (req, res) => {
   const parsed = createCampaignSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
-    return;
-  }
-  if (!req.file) {
-    res.status(400).json({ error: "Missing recipients CSV file" });
     return;
   }
 
@@ -39,9 +53,10 @@ campaignsRouter.post("/", upload.single("recipients"), async (req, res) => {
     return;
   }
 
-  const recipients = parseRecipientsCsv(req.file.buffer);
+  const fromCsv = req.file ? parseRecipientsCsv(req.file.buffer) : [];
+  const recipients = Array.from(new Set([...fromCsv, ...parsed.data.manualRecipients]));
   if (recipients.length === 0) {
-    res.status(400).json({ error: "No valid email addresses found in the uploaded file" });
+    res.status(400).json({ error: "No valid email addresses provided (add recipients or upload a CSV)" });
     return;
   }
 

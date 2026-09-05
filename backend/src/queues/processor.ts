@@ -11,9 +11,9 @@ import type { EmailJobData } from "./emailQueue";
 // Keeps the DB row (and its Elasticsearch doc) in sync with reality whenever a rate-limit
 // gate pushes a job's actual send time out — otherwise the dashboard's "Scheduled For"
 // column would keep showing the original, now-stale, pre-computed time.
-async function rescheduleTo(emailId: string, scheduledAt: Date): Promise<void> {
+async function rescheduleTo(emailId: string, scheduledAt: Date, senderName: string): Promise<void> {
   const updated = await prisma.emailJob.update({ where: { id: emailId }, data: { scheduledAt } });
-  await indexEmailJob(updated);
+  await indexEmailJob({ ...updated, senderConfig: { name: senderName } });
 }
 
 export function makeProcessor(redis: Redis) {
@@ -40,7 +40,7 @@ export function makeProcessor(redis: Redis) {
 
     const minDelay = await checkMinDelay(redis, sender.id, sender.minDelaySeconds);
     if (!minDelay.allowed) {
-      await rescheduleTo(emailJob.id, new Date(minDelay.nextAllowedAt));
+      await rescheduleTo(emailJob.id, new Date(minDelay.nextAllowedAt), sender.name);
       await job.moveToDelayed(minDelay.nextAllowedAt, token);
       // BullMQ's documented signal that this job was intentionally moved to "delayed"
       // rather than failed — suppresses retry/backoff/failed-event handling for it.
@@ -53,7 +53,7 @@ export function makeProcessor(redis: Redis) {
       if (shouldNotify) {
         await notifyRateLimitHit(emailJob.userId, sender.name, sender.hourlyLimit);
       }
-      await rescheduleTo(emailJob.id, hourly.nextWindowStart);
+      await rescheduleTo(emailJob.id, hourly.nextWindowStart, sender.name);
       await job.moveToDelayed(hourly.nextWindowStart.getTime(), token);
       throw new DelayedError();
     }
@@ -66,14 +66,14 @@ export function makeProcessor(redis: Redis) {
         where: { id: emailJob.id },
         data: { status: "sent", sentAt: new Date() },
       });
-      await indexEmailJob(updated);
+      await indexEmailJob({ ...updated, senderConfig: { name: sender.name } });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       const updated = await prisma.emailJob.update({
         where: { id: emailJob.id },
         data: { status: "failed", error: message },
       });
-      await indexEmailJob(updated);
+      await indexEmailJob({ ...updated, senderConfig: { name: sender.name } });
       logger.error({ err, emailId: emailJob.id }, "Failed to send email");
     }
   };

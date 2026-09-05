@@ -2,7 +2,9 @@ import type { EmailJob } from "@prisma/client";
 import { esClient, EMAILS_INDEX } from "../lib/elasticsearch";
 import { logger } from "../lib/logger";
 
-export async function indexEmailJob(job: EmailJob): Promise<void> {
+type EmailJobWithSender = EmailJob & { senderConfig: { name: string } };
+
+export async function indexEmailJob(job: EmailJobWithSender): Promise<void> {
   try {
     await esClient.index({
       index: EMAILS_INDEX,
@@ -17,6 +19,7 @@ export async function indexEmailJob(job: EmailJob): Promise<void> {
         status: job.status,
         scheduledAt: job.scheduledAt,
         sentAt: job.sentAt,
+        sender: job.senderConfig.name,
       },
     });
   } catch (err) {

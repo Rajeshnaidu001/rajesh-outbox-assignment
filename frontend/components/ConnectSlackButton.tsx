@@ -34,7 +34,7 @@ export function ConnectSlackButton() {
       <button
         onClick={disconnect}
         disabled={busy}
-        className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-fg transition hover:bg-surface-hover disabled:opacity-60"
+        className="flex w-full items-center gap-2 rounded-lg border border-sidebar-border px-3 py-1.5 text-sm font-medium text-sidebar-fg transition hover:bg-sidebar-hover disabled:opacity-60"
         title="Click to disconnect"
       >
         <span className="h-2 w-2 rounded-full bg-success" />
@@ -47,9 +47,9 @@ export function ConnectSlackButton() {
     <button
       onClick={connect}
       disabled={busy}
-      className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-fg transition hover:bg-surface-hover disabled:opacity-60"
+      className="flex w-full items-center gap-2 rounded-lg border border-sidebar-border px-3 py-1.5 text-sm font-medium text-sidebar-fg transition hover:bg-sidebar-hover disabled:opacity-60"
     >
-      <span className="h-2 w-2 rounded-full bg-muted" />
+      <span className="h-2 w-2 rounded-full bg-sidebar-muted" />
       {busy ? "Connecting…" : "Connect Slack"}
     </button>
   );

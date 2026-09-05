@@ -1,5 +1,11 @@
 import { EmailsTable } from "./EmailsTable";
 
-export function ScheduledTable({ searchQuery, refreshToken }: { searchQuery: string; refreshToken: number }) {
-  return <EmailsTable kind="scheduled" searchQuery={searchQuery} refreshToken={refreshToken} />;
+interface Props {
+  searchQuery: string;
+  refreshToken: number;
+  statusFilter: string;
+}
+
+export function ScheduledTable({ searchQuery, refreshToken, statusFilter }: Props) {
+  return <EmailsTable kind="scheduled" searchQuery={searchQuery} refreshToken={refreshToken} statusFilter={statusFilter} />;
 }

@@ -24,6 +24,7 @@ export async function ensureEmailsIndex(): Promise<void> {
           status: { type: "keyword" },
           scheduledAt: { type: "date" },
           sentAt: { type: "date" },
+          sender: { type: "keyword" },
         },
       },
     });

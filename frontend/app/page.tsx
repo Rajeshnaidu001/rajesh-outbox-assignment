@@ -3,13 +3,26 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { Header } from "@/components/Header";
+import { Sidebar } from "@/components/Sidebar";
 import { ComposeModal } from "@/components/ComposeModal";
 import { ScheduledTable } from "@/components/ScheduledTable";
 import { SentTable } from "@/components/SentTable";
-import { SearchBar } from "@/components/SearchBar";
+import { SearchBar, type FilterOption } from "@/components/SearchBar";
 
 type Tab = "scheduled" | "sent";
+
+const FILTER_OPTIONS: Record<Tab, FilterOption[]> = {
+  scheduled: [
+    { value: "all", label: "All" },
+    { value: "scheduled", label: "Scheduled" },
+    { value: "sending", label: "Sending" },
+  ],
+  sent: [
+    { value: "all", label: "All" },
+    { value: "sent", label: "Sent" },
+    { value: "failed", label: "Failed" },
+  ],
+};
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -17,6 +30,7 @@ export default function DashboardPage() {
 
   const [tab, setTab] = useState<Tab>("scheduled");
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [composeOpen, setComposeOpen] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
@@ -31,49 +45,34 @@ export default function DashboardPage() {
     return () => clearTimeout(timer);
   }, [toast]);
 
+  function changeTab(next: Tab) {
+    setTab(next);
+    setStatusFilter("all");
+  }
+
   if (loading || !user) {
     return <div className="flex min-h-screen items-center justify-center text-muted">Loading…</div>;
   }
 
   return (
-    <div className="min-h-screen bg-bg">
-      <Header />
+    <div className="flex min-h-screen bg-bg">
+      <Sidebar activeTab={tab} onTabChange={changeTab} onCompose={() => setComposeOpen(true)} refreshToken={refreshToken} />
 
-      <main className="mx-auto max-w-6xl px-6 py-8">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-fg">Campaigns</h1>
-            <p className="text-sm text-muted">Schedule, throttle, and track your outbound email campaigns.</p>
-          </div>
-          <button
-            onClick={() => setComposeOpen(true)}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-fg transition hover:opacity-90"
-          >
-            + Compose
-          </button>
-        </div>
-
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex gap-1 rounded-lg border border-border bg-surface p-1">
-            {(["scheduled", "sent"] as Tab[]).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`rounded-md px-4 py-1.5 text-sm font-medium capitalize transition ${
-                  tab === t ? "bg-accent text-accent-fg" : "text-muted hover:text-fg"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-          <SearchBar onChange={setSearchQuery} />
+      <main className="min-w-0 flex-1 px-6 py-6">
+        <div className="mb-5 flex items-center justify-between gap-4">
+          <SearchBar
+            onChange={setSearchQuery}
+            onRefresh={() => setRefreshToken((t) => t + 1)}
+            filterOptions={FILTER_OPTIONS[tab]}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+          />
         </div>
 
         {tab === "scheduled" ? (
-          <ScheduledTable searchQuery={searchQuery} refreshToken={refreshToken} />
+          <ScheduledTable searchQuery={searchQuery} refreshToken={refreshToken} statusFilter={statusFilter} />
         ) : (
-          <SentTable searchQuery={searchQuery} refreshToken={refreshToken} />
+          <SentTable searchQuery={searchQuery} refreshToken={refreshToken} statusFilter={statusFilter} />
         )}
       </main>
 
@@ -82,7 +81,7 @@ export default function DashboardPage() {
         onClose={() => setComposeOpen(false)}
         onScheduled={(count) => {
           setRefreshToken((t) => t + 1);
-          setTab("scheduled");
+          changeTab("scheduled");
           setToast(`Scheduled ${count} email${count === 1 ? "" : "s"}.`);
         }}
       />

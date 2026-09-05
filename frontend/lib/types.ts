@@ -4,6 +4,7 @@ export interface EmailRow {
   id: string;
   recipient: string;
   subject: string;
+  body: string;
   status: EmailStatus;
   scheduledAt: string;
   sentAt: string | null;

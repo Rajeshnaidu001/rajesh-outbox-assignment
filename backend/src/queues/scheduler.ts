@@ -95,7 +95,7 @@ export async function createCampaign(input: CreateCampaignInput) {
     const delay = Math.max(0, schedule[i].getTime() - Date.now());
     await emailQueue.add("send", { emailId: emailJob.id }, { jobId: id, delay });
 
-    indexEmailJob(emailJob).catch(() => undefined);
+    indexEmailJob({ ...emailJob, senderConfig: { name: sender.name } }).catch(() => undefined);
     createdJobs.push(emailJob);
   }
 
