@@ -3,7 +3,10 @@ services:
     name: outbox-backend
     runtime: node
     plan: free
-    buildCommand: npm install --workspace=backend --include-workspace-root && npm run build --workspace=backend
+    # --include=dev overrides the NODE_ENV=production-triggered devDependency skip below —
+    # typescript/@types/prisma (all devDependencies) are needed to build, even though
+    # NODE_ENV=production is set (intentionally, for runtime logging behavior).
+    buildCommand: npm install --workspace=backend --include-workspace-root --include=dev && npm run build --workspace=backend
     startCommand: npm run start:combined --workspace=backend
     healthCheckPath: /health
     envVars:
